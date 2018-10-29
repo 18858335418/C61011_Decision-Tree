@@ -7,6 +7,9 @@ from sklearn.feature_extraction import DictVectorizer
 from sklearn import preprocessing
 from sklearn import tree
 import pandas as pd
+import sys
+
+sys.setrecursionlimit(1000000)
 
 #
 # def createDataset():
@@ -77,15 +80,15 @@ def find_best_feature(dataset, labels, labelled_index):
 
 # define the Node class to store the node information while buliding the tree
 class DecisionTreeNode(object):
-    def __init__(self, dataset, labels, col=-1, predict_results=None, left_sub_node=None, right_sub_node=None):
+    def __init__(self, dataset, labels, col=-1, predict_results=None, sub_node=[],feature_name=None,sub_index=[]):
         self.labelled_index = []  # labelled features
         self.dataset = dataset  # dataset using to build tree
         self.col = col  # the sort number of features
         self.labels = labels  # feature name for the node
-        self.left_sub_node = left_sub_node  # the left branch of the node
-        self.right_sub_node = right_sub_node  # the right branch of the node
+        self.sub_node = sub_node
         self.predict_results = predict_results
-
+        self.feature_name = feature_name
+        self.sub_index = sub_index
 
 class DecisionTree():
     def __init__(self):
@@ -102,31 +105,30 @@ class DecisionTree():
         index = find_best_feature(node.dataset, node.labels, node.labelled_index)
         node.col = index
         print(index)
+        f_list=[]
 
-        left_sub_index = [i for i, value in enumerate(node.dataset) if value[index]]
-        print(left_sub_index)
-        left_sub_set = [node.dataset[i] for i in left_sub_index]
-        left_sub_labels = [node.labels[i] for i in left_sub_index]
+        for i, value in enumerate(node.dataset):
+            f_list.append(value[index])              # add all values into f_list
+        print(f_list)
+        feature_count = Counter(f_list)              #store in Counter
+        print(feature_count)
+        sub_index_list = []
+        for j,keys_feature in enumerate(feature_count.keys()):
+            sub_index = [i for i, value in enumerate(node.dataset) if value[index]==keys_feature]
+            print(sub_index)
+            sub_set = [node.dataset[i] for i in sub_index]
+            sub_labels = [node.labels[i] for i in sub_index]
+            sub_node = DecisionTreeNode(dataset=sub_set, labels=sub_labels)
+            sub_node.labelled_index = list(node.labelled_index)
+            sub_node.labelled_index.append(index)
+            sub_node.feature_name=keys_feature
+            sub_node.sub_index = sub_index
+            node.sub_node.append(sub_node)
 
-        left_sub_node = DecisionTreeNode(dataset=left_sub_set, labels=left_sub_labels)
-        left_sub_node.labelled_index = list(node.labelled_index)
-        left_sub_node.labelled_index.append(index)
-        node.left_sub_node = left_sub_node
-
-        right_sub_index = [i for i, value in enumerate(node.dataset) if not value[index]]
-        print(right_sub_index)
-        right_sub_set = [node.dataset[i] for i in right_sub_index]
-        right_sub_labels = [node.labels[i] for i in right_sub_index]
-
-        right_sub_node = DecisionTreeNode(dataset=right_sub_set, labels=right_sub_labels)
-        right_sub_node.labelled_index = list(node.labelled_index)
-        right_sub_node.labelled_index.append(index)
-        node.right_sub_node = right_sub_node
-        if left_sub_index:
-            self.build_tree(node.left_sub_node)
-
-        if right_sub_index:
-            self.build_tree(node.right_sub_node)
+        for i in range(node.sub_node.__len__()):   #bug, buneng  digui
+            print(i)
+            if node.sub_node[i].sub_index:
+                self.build_tree(node.sub_node[i])
 
     def fit(self, X, y):
         self.featurenum = len(X[0])
@@ -137,10 +139,10 @@ class DecisionTree():
         if node.predict_results:
             return node.predict_results
         no = node.col
-        if testdata[no]:
-            return self._predict(testdata, node.left_sub_node)
-        else:
-            return self._predict(testdata, node.right_sub_node)
+        num = node.sub_node.__len__()
+        for i in range(num):
+            if testdata[no]==node.sub_node[i].feature_name:
+                return self._predict(testdata, node.sub_node[i])
 
     def predict(self, testdata):
         return self._predict(testdata, self.tree_root)
@@ -187,12 +189,12 @@ clf.fit(data_X, data_y)
 
 tree = DecisionTree()
 tree.fit(data_X, label_list)
-for i in range(0,13):
-    first_row = data_X[i, :]
-    new_row = list(first_row)
-
-    print(data_X[i])
-    print(new_row)
-
-    print('predict:',tree.predict(new_row))
-    print('predict:',clf.predict([new_row]))
+# for i in range(0,13):
+#     first_row = data_X[i, :]
+#     new_row = list(first_row)
+#
+#     print(data_X[i])
+#     print(new_row)
+#
+#     print('predict:',tree.predict(new_row))
+#     print('predict:',clf.predict([new_row]))

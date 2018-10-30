@@ -92,6 +92,7 @@ class DecisionTreeNode(object):
         self.feature_name = feature_name
         self.sub_index = sub_index
 
+
 class DecisionTree():
     def __init__(self):
         self.featurenum = 0
@@ -146,15 +147,96 @@ class DecisionTree():
             return node.predict_results
         no = node.col
         num = node.sub_node.__len__()
+        entropy_dict = defaultdict(list)
         for i in range(num):
             if testdata[no]==node.sub_node[i].feature_name:
                 return self._predict(testdata, node.sub_node[i])
+            elif testdata[no]!=node.sub_node[i].feature_name and i==(num-1):    #maybe the data appears in the train_dataset doesn not appear in the test_dataset
+                return self._predict(testdata, node.sub_node[i])
+
+
+    # def predict(self, testdata):
+    #     return self._predict(testdata, self.tree_root)
 
     def predict(self, testdata):
-        return self._predict(testdata, self.tree_root)
+        Predict_Result = []
+        for i in range(len(testdata)):
+            result = self._predict(testdata[i], self.tree_root)
+            Predict_Result.append(result)
+        return Predict_Result
+
+    def Accuracy(self, predict_label, y_label):    #calculate the accuracy
+        count = 0
+        for i in range(len(predict_label)):
+            if predict_label[i]==y_label[i]:
+                count +=1
+        accuracy = count/len(predict_label)
+        return accuracy
 
 
-# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/lymphography/lymphography.data.csv", "r")
+class RandomForest():
+    def __init__(self):
+        self.tree_list = []
+
+    def fit(self, feature_list, label_list):          #build the RandomForest by DecisionTree , every RandomForest = 10 DecisionTrees
+        train_list = []
+        train_label_list = []
+        vec = DictVectorizer()
+        for i in range(10):
+            x_train, x_test, y_train, y_test = train_test_split(feature_list, label_list, test_size=0.33,
+                                                                random_state=i)
+            x_train_vec = vec.fit_transform(x_train).toarray()
+            train_list.append(x_train_vec)
+            train_label_list.append(y_train)
+            tree=DecisionTree()
+            tree.fit(x_train_vec, y_train)
+            self.tree_list.append(tree)
+
+    def _predict(self, testdata, node: DecisionTreeNode):   #predict the label of every node
+        if node.predict_results:
+            return node.predict_results
+        no = node.col
+        num = node.sub_node.__len__()
+        entropy_dict = defaultdict(list)
+        for i in range(num):
+            if testdata[no]==node.sub_node[i].feature_name:
+                return self._predict(testdata, node.sub_node[i])
+            elif testdata[no]!=node.sub_node[i].feature_name and i==(num-1):    #maybe the data appears in the train_dataset doesn not appear in the test_dataset
+                return self._predict(testdata, node.sub_node[i])
+
+
+    # def predict(self, testdata):
+    #     return self._predict(testdata, self.tree_root)
+
+    def predict(self, testdata):           #predict the label of all testdata set, result = mode of the labels for 10 trees
+        Predict_Result = []
+        for i in range(len(testdata)):
+            result_list = []
+            for j in range(10):
+                result = self.tree_list[0]._predict(testdata[i], self.tree_list[j].tree_root)
+                result_list.append(result)
+                result_dic = dict((a, result_list.count(a)) for a in result_list);
+            print(result_dic)
+            for k, v in result_dic.items():  # 否则，出现次数最大的数字，就是众数
+                if v == max(result_dic.values()):
+                    result = k
+                    break
+            print(result)
+            Predict_Result.append(result)
+        return Predict_Result
+
+    def Accuracy(self, predict_label, y_label):  #calculate the accuracy
+        count = 0
+        for i in range(len(predict_label)):
+            if predict_label[i]==y_label[i]:
+                count +=1
+        accuracy = count/len(predict_label)
+        return accuracy
+
+
+
+# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/Balloons/yellow-small+adult-stretch_number.data.csv", "r")
+# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/mushroom/agaricus-lepiota_number.data.csv", "r")
 file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/lymphography/lymphography.data.csv", "r")
 # df = pd.read_csv(file)
 # print(df)
@@ -175,13 +257,8 @@ for everyrow in reader:
     feature_list.append(row)
 
 file.close()
-x_train, x_test, y_train, y_test = train_test_split(feature_list, label_list, test_size=0.25, random_state=0)
-# print(label_list)
-# print(feature_list)
-# print(x_train)
-# print(x_test)
-# print(y_train)
-# print(y_test)
+
+x_train, x_test, y_train, y_test = train_test_split(feature_list, label_list, test_size=0.33, random_state=0)
 
 # extract the feature of train_X
 vec = DictVectorizer()
@@ -194,16 +271,56 @@ data_y = lb.fit_transform(label_list)
 y_train_label =  lb.fit_transform(y_train)
 y_test_label = lb.fit_transform(y_test)
 
+
+Forest = RandomForest()
+Forest.fit(feature_list, label_list)
+predict_label_RandomForest = Forest.predict(x_test_vec)
+print('predict:',predict_label_RandomForest)
+print(y_test)
+accuracy_RandomForest =Forest.Accuracy(predict_label_RandomForest,y_test)
+# print(accuracy_RandomForest)
+
+
+Decision_tree = DecisionTree()
+Decision_tree.fit(x_train_vec, y_train)
+predict_label_tree = Decision_tree.predict(x_test_vec)
+accuracy_tree =Decision_tree.Accuracy(predict_label_tree,y_test)
+# print(accuracy_tree)
+# print(accuracy_RandomForest)
+
 clf = tree.DecisionTreeClassifier(criterion='entropy')
 clf.fit(x_train_vec, y_train_label)
+predict_label_clf = clf.predict(x_test_vec)
+accuracy_clf = clf.score(x_test_vec,y_test_label)
 
+print(accuracy_tree)
+print(accuracy_RandomForest)
+print(accuracy_clf)
 
-tree = DecisionTree()
-tree.fit(x_train_vec, y_train)
-for i in range(len(y_test)):
-    first_row = x_test_vec[i, :]
-    # print(first_row)
-    new_row = list(first_row)
+#
+#
+# tree = DecisionTree()
+# tree.fit(x_train_vec, y_train)
+# # for i in range(len(y_test)):
+# #     first_row = x_test_vec[i, :]
+# #     new_row = list(first_row)
+# #     print("************")
+# #     print('predict:',tree.predict(first_row))
+# #     print(y_test[i])
+# #     print('predict:',clf.predict([new_row]))
+# #     print(y_test_label[i])
+#
+# print("************")
+# predict_label = tree.predict(x_test_vec)
+# print('predict:',predict_label)
+# print(y_test)
+#
+# predict_label_clf = clf.predict(x_test_vec)
+# print('predict:',predict_label_clf)
+# print(y_test_label)
+#
+# accuracy =tree.Accuracy(predict_label,y_test)
+# print(accuracy)
+# accuracy_clf = clf.score(x_test_vec,y_test_label)
+# print(accuracy_clf)
 
-    print('predict:',tree.predict(new_row))
-    print('predict:',clf.predict([new_row]))

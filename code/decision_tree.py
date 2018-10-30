@@ -9,6 +9,8 @@ from sklearn import tree
 import pandas as pd
 import sys
 
+from sklearn.model_selection import train_test_split
+
 sys.setrecursionlimit(1000000)
 
 #
@@ -100,35 +102,39 @@ class DecisionTree():
         if split(node.labels):  # all examples have the same label
             print("all examples have the same label")
             node.predict_results = node.labels[0]
-            print(node.predict_results)
+            # print(node.predict_results)
             return
         index = find_best_feature(node.dataset, node.labels, node.labelled_index)
         node.col = index
-        print(index)
+        # print(index)
         f_list=[]
 
         for i, value in enumerate(node.dataset):
             f_list.append(value[index])              # add all values into f_list
-        print(f_list)
+        # print(f_list)
         feature_count = Counter(f_list)              #store in Counter
-        print(feature_count)
+        # print(feature_count)
         sub_index_list = []
+        node.sub_node = []
         for j,keys_feature in enumerate(feature_count.keys()):
             sub_index = [i for i, value in enumerate(node.dataset) if value[index]==keys_feature]
-            print(sub_index)
+            # print(sub_index)
             sub_set = [node.dataset[i] for i in sub_index]
             sub_labels = [node.labels[i] for i in sub_index]
+            # print(sub_labels)
             sub_node = DecisionTreeNode(dataset=sub_set, labels=sub_labels)
-            sub_node.labelled_index = list(node.labelled_index)
             sub_node.labelled_index.append(index)
+            sub_node.labelled_index = list(node.labelled_index)
             sub_node.feature_name=keys_feature
             sub_node.sub_index = sub_index
             node.sub_node.append(sub_node)
 
-        for i in range(node.sub_node.__len__()):   #bug, buneng  digui
+        for i in range(node.sub_node.__len__()):#bug, buneng  digui
             print(i)
             if node.sub_node[i].sub_index:
+                # print(node.sub_node[i].labels)
                 self.build_tree(node.sub_node[i])
+
 
     def fit(self, X, y):
         self.featurenum = len(X[0])
@@ -149,7 +155,7 @@ class DecisionTree():
 
 
 # file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/lymphography/lymphography.data.csv", "r")
-file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/Balloons/yellow-small+adult-stretch_number.data.csv", "r")
+file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/lymphography/lymphography.data.csv", "r")
 # df = pd.read_csv(file)
 # print(df)
 # af = df.drop_duplicates(['color', 'size', 'act', 'age'])
@@ -169,32 +175,35 @@ for everyrow in reader:
     feature_list.append(row)
 
 file.close()
-
-print(label_list)
-print(feature_list)
+x_train, x_test, y_train, y_test = train_test_split(feature_list, label_list, test_size=0.25, random_state=0)
+# print(label_list)
+# print(feature_list)
+# print(x_train)
+# print(x_test)
+# print(y_train)
+# print(y_test)
 
 # extract the feature of train_X
 vec = DictVectorizer()
 data_X = vec.fit_transform(feature_list).toarray()
-print(data_X)
+x_train_vec = vec.fit_transform(x_train).toarray()
+x_test_vec = vec.fit_transform(x_test).toarray()
 
 lb = preprocessing.LabelBinarizer()
 data_y = lb.fit_transform(label_list)
-print(label_list)
-print(data_y)
+y_train_label =  lb.fit_transform(y_train)
+y_test_label = lb.fit_transform(y_test)
 
 clf = tree.DecisionTreeClassifier(criterion='entropy')
-clf.fit(data_X, data_y)
+clf.fit(x_train_vec, y_train_label)
 
 
 tree = DecisionTree()
-tree.fit(data_X, label_list)
-# for i in range(0,13):
-#     first_row = data_X[i, :]
-#     new_row = list(first_row)
-#
-#     print(data_X[i])
-#     print(new_row)
-#
-#     print('predict:',tree.predict(new_row))
-#     print('predict:',clf.predict([new_row]))
+tree.fit(x_train_vec, y_train)
+for i in range(len(y_test)):
+    first_row = x_test_vec[i, :]
+    # print(first_row)
+    new_row = list(first_row)
+
+    print('predict:',tree.predict(new_row))
+    print('predict:',clf.predict([new_row]))

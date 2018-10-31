@@ -8,6 +8,7 @@ from sklearn import preprocessing
 from sklearn import tree
 import pandas as pd
 import sys
+from sklearn import svm
 
 from sklearn.model_selection import train_test_split
 
@@ -235,9 +236,9 @@ class RandomForest():
 
 
 
-# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/Balloons/yellow-small+adult-stretch_number.data.csv", "r")
+file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/Balloons/yellow-small+adult-stretch_number.data.csv", "r")
 # file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/mushroom/agaricus-lepiota_number.data.csv", "r")
-file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/lymphography/lymphography.data.csv", "r")
+# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/lymphography/lymphography.data.csv", "r")
 # df = pd.read_csv(file)
 # print(df)
 # af = df.drop_duplicates(['color', 'size', 'act', 'age'])
@@ -288,14 +289,26 @@ accuracy_tree =Decision_tree.Accuracy(predict_label_tree,y_test)
 # print(accuracy_tree)
 # print(accuracy_RandomForest)
 
-clf = tree.DecisionTreeClassifier(criterion='entropy')
-clf.fit(x_train_vec, y_train_label)
-predict_label_clf = clf.predict(x_test_vec)
-accuracy_clf = clf.score(x_test_vec,y_test_label)
+clf_DecisionTree = tree.DecisionTreeClassifier(criterion='entropy')
+clf_DecisionTree.fit(x_train_vec, y_train_label)
+predict_label_clf_DecisionTree = clf_DecisionTree.predict(x_test_vec)
+accuracy_clf_DecisionTree = clf_DecisionTree.score(x_test_vec,y_test_label)
+
+
+clf_SVM = svm.SVC(gamma='scale',C=1.0,kernel='rbf')
+clf_SVM.fit(x_train_vec, y_train)
+predict_label_clf_SVM = clf_SVM.predict(x_test_vec)
+accuracy_clf_SVM = clf_SVM.score(x_test_vec,y_test)
+
+# SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+#     decision_function_shape='ovr', degree=3, gamma='scale', kernel='rbf',
+#     max_iter=-1, probability=False, random_state=None, shrinking=True,
+#     tol=0.001, verbose=False)
 
 print(accuracy_tree)
 print(accuracy_RandomForest)
-print(accuracy_clf)
+print(accuracy_clf_DecisionTree)
+print(accuracy_clf_SVM)
 
 #
 #

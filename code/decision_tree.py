@@ -10,6 +10,7 @@ import pandas as pd
 import sys
 from sklearn import svm
 import graphviz
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 
@@ -177,14 +178,15 @@ class DecisionTree():
 
 
 class RandomForest():
-    def __init__(self):
+    def __init__(self,num):
         self.tree_list = []
+        self.num = num
 
-    def fit(self, feature_list, label_list):          #build the RandomForest by DecisionTree , every RandomForest = 10 DecisionTrees
+    def fit(self, feature_list, label_list):          #build the RandomForest by DecisionTree , every RandomForest =num DecisionTrees
         train_list = []
         train_label_list = []
         vec = DictVectorizer()
-        for i in range(10):
+        for i in range(self.num):
             x_train, x_test, y_train, y_test = train_test_split(feature_list, label_list, test_size=0.33,
                                                                 random_state=i)
             x_train_vec = vec.fit_transform(x_train).toarray()
@@ -198,23 +200,23 @@ class RandomForest():
         if node.predict_results:
             return node.predict_results
         no = node.col
-        num = node.sub_node.__len__()
+        num_subnode = node.sub_node.__len__()
         entropy_dict = defaultdict(list)
-        for i in range(num):
+        for i in range(num_subnode):
             if testdata[no]==node.sub_node[i].feature_name:
                 return self._predict(testdata, node.sub_node[i])
-            elif testdata[no]!=node.sub_node[i].feature_name and i==(num-1):    #maybe the data appears in the train_dataset doesn not appear in the test_dataset
+            elif testdata[no]!=node.sub_node[i].feature_name and i==(num_subnode-1):    #maybe the data appears in the train_dataset doesn not appear in the test_dataset
                 return self._predict(testdata, node.sub_node[i])
 
 
     # def predict(self, testdata):
     #     return self._predict(testdata, self.tree_root)
 
-    def predict(self, testdata):           #predict the label of all testdata set, result = mode of the labels for 10 trees
+    def predict(self, testdata):           #predict the label of all testdata set, result = mode of the labels for num trees
         Predict_Result = []
         for i in range(len(testdata)):
             result_list = []
-            for j in range(10):
+            for j in range(self.num):
                 result = self.tree_list[0]._predict(testdata[i], self.tree_list[j].tree_root)
                 result_list.append(result)
                 result_dic = dict((a, result_list.count(a)) for a in result_list);
@@ -237,9 +239,9 @@ class RandomForest():
 
 
 
-file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/Balloons/yellow-small+adult-stretch_number.data.csv", "r")
+# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/Balloons/yellow-small+adult-stretch_number.data.csv", "r")
 # file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/mushroom/agaricus-lepiota_number.data.csv", "r")
-# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/lymphography/lymphography.data.csv", "r")
+file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/P/lymphography.data.csv", "r")
 # df = pd.read_csv(file)
 # print(df)
 # af = df.drop_duplicates(['color', 'size', 'act', 'age'])
@@ -273,27 +275,33 @@ data_y = lb.fit_transform(label_list)
 y_train_label =  lb.fit_transform(y_train)
 y_test_label = lb.fit_transform(y_test)
 
+error_rate_RandomForest_List = []
+for i in range(25):
+    Forest = RandomForest(i+1)
+    Forest.fit(feature_list, label_list)
+    predict_label_RandomForest = Forest.predict(x_test_vec)
+    accuracy_RandomForest =Forest.Accuracy(predict_label_RandomForest,y_test)
+    error_rate_RandomForest = 1 - accuracy_RandomForest
+    error_rate_RandomForest_List.append(error_rate_RandomForest)
 
-Forest = RandomForest()
-Forest.fit(feature_list, label_list)
-predict_label_RandomForest = Forest.predict(x_test_vec)
-print('predict:',predict_label_RandomForest)
-print(y_test)
-accuracy_RandomForest =Forest.Accuracy(predict_label_RandomForest,y_test)
-# print(accuracy_RandomForest)
+i_range = range(1,26,1)
+plt.errorbar(i_range,error_rate_RandomForest_List,yerr=None, errorevery=1,fmt='o-')
+plt.xlabel("The number of the trees")
+plt.ylabel("Error Rate")
+plt.show()
 
 
 Decision_tree = DecisionTree()
 Decision_tree.fit(x_train_vec, y_train)
 predict_label_tree = Decision_tree.predict(x_test_vec)
 accuracy_tree =Decision_tree.Accuracy(predict_label_tree,y_test)
-# print(accuracy_tree)
-# print(accuracy_RandomForest)
+error_rate_tree = 1 - accuracy_tree
 
 clf_DecisionTree = tree.DecisionTreeClassifier(criterion='entropy')
 clf_DecisionTree.fit(x_train_vec, y_train_label)
 predict_label_clf_DecisionTree = clf_DecisionTree.predict(x_test_vec)
 accuracy_clf_DecisionTree = clf_DecisionTree.score(x_test_vec,y_test_label)
+error_rate_clf_DecisionTree = 1 - accuracy_clf_DecisionTree
 
 dot_data = tree.export_graphviz(clf_DecisionTree, out_file=None)     #draw the tree
 graph = graphviz.Source(dot_data)
@@ -303,7 +311,7 @@ clf_SVM = svm.SVC(gamma='scale',C=1.0,kernel='rbf')
 clf_SVM.fit(x_train_vec, y_train)
 predict_label_clf_SVM = clf_SVM.predict(x_test_vec)
 accuracy_clf_SVM = clf_SVM.score(x_test_vec,y_test)
-
+error_rate_clf_SVM = 1 - accuracy_clf_SVM
 # SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
 #     decision_function_shape='ovr', degree=3, gamma='scale', kernel='rbf',
 #     max_iter=-1, probability=False, random_state=None, shrinking=True,
@@ -313,7 +321,7 @@ print(accuracy_tree)
 print(accuracy_RandomForest)
 print(accuracy_clf_DecisionTree)
 print(accuracy_clf_SVM)
-
+print(error_rate_RandomForest_List)
 #
 #
 # tree = DecisionTree()

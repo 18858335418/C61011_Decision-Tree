@@ -9,6 +9,7 @@ from sklearn import tree
 import pandas as pd
 import sys
 from sklearn import svm
+import graphviz
 
 from sklearn.model_selection import train_test_split
 
@@ -294,6 +295,9 @@ clf_DecisionTree.fit(x_train_vec, y_train_label)
 predict_label_clf_DecisionTree = clf_DecisionTree.predict(x_test_vec)
 accuracy_clf_DecisionTree = clf_DecisionTree.score(x_test_vec,y_test_label)
 
+dot_data = tree.export_graphviz(clf_DecisionTree, out_file=None)     #draw the tree
+graph = graphviz.Source(dot_data)
+graph.render("clf_DecisionTree_Balloons")
 
 clf_SVM = svm.SVC(gamma='scale',C=1.0,kernel='rbf')
 clf_SVM.fit(x_train_vec, y_train)

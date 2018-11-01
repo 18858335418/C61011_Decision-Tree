@@ -73,13 +73,17 @@ def find_best_feature(dataset, labels, labelled_index):
     feature_num = len(dataset[0])
     for i in range(feature_num):
         if i in labelled_index:  # exclude the feature which has been in the leaves
+            print("i in labelled index")
             continue
         feature_list = [data[i] for data in dataset]
         infogain_dict[i] = calc_infogain(feature_list, labels)
         # print(infogain_dict[i])
     # find the feature with the biggest information gain
     feature = sorted(infogain_dict.items(), key=lambda calc_infogain: calc_infogain[1], reverse=True)
-    # print(feature)
+    print(feature)
+    if feature.__len__()==0:
+        print("-1")
+        return -1
     return feature[0][0]
 
 
@@ -109,8 +113,18 @@ class DecisionTree():
             # print(node.predict_results)
             return
         index = find_best_feature(node.dataset, node.labels, node.labelled_index)
+        if index==-1:
+            print("in the leaf")
+            node_label_list=[]
+            node_label__dic = dict((a, node.labels.count(a)) for a in node.labels);
+            for k, v in node_label__dic.items():  # 否则，出现次数最大的数字，就是众数
+                if v == max(node_label__dic.values()):
+                    result = k
+                    node.predict_results = result
+                    break
+            return
         node.col = index
-        # print(index)
+        print(index)
         f_list=[]
 
         for i, value in enumerate(node.dataset):
@@ -127,8 +141,8 @@ class DecisionTree():
             sub_labels = [node.labels[i] for i in sub_index]
             # print(sub_labels)
             sub_node = DecisionTreeNode(dataset=sub_set, labels=sub_labels)
+            sub_node.labelled_index = node.labelled_index
             sub_node.labelled_index.append(index)
-            sub_node.labelled_index = list(node.labelled_index)
             sub_node.feature_name=keys_feature
             sub_node.sub_index = sub_index
             node.sub_node.append(sub_node)
@@ -136,7 +150,6 @@ class DecisionTree():
         for i in range(node.sub_node.__len__()):#bug, buneng  digui
             print(i)
             if node.sub_node[i].sub_index:
-                # print(node.sub_node[i].labels)
                 self.build_tree(node.sub_node[i])
 
 
@@ -217,9 +230,9 @@ class RandomForest():
         for i in range(len(testdata)):
             result_list = []
             for j in range(self.num):
-                result = self.tree_list[0]._predict(testdata[i], self.tree_list[j].tree_root)
+                result = self.tree_list[j]._predict(testdata[i], self.tree_list[j].tree_root)
                 result_list.append(result)
-                result_dic = dict((a, result_list.count(a)) for a in result_list);
+            result_dic = dict((a, result_list.count(a)) for a in result_list);
             print(result_dic)
             for k, v in result_dic.items():  # 否则，出现次数最大的数字，就是众数
                 if v == max(result_dic.values()):
@@ -241,7 +254,10 @@ class RandomForest():
 
 # file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/Balloons/yellow-small+adult-stretch_number.data.csv", "r")
 # file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/mushroom/agaricus-lepiota_number.data.csv", "r")
-file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/P/lymphography.data.csv", "r")
+# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/lymphography/lymphography.data.csv", "r")
+file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/breast_cancer/breast-cancer.data.csv", "r")
+# file = open("/Users/patrick/Documents/foundations of machine learning/lab/coursework/dataset/Heart/SPECT.csv", "r")
+
 # df = pd.read_csv(file)
 # print(df)
 # af = df.drop_duplicates(['color', 'size', 'act', 'age'])
@@ -262,7 +278,8 @@ for everyrow in reader:
 
 file.close()
 
-x_train, x_test, y_train, y_test = train_test_split(feature_list, label_list, test_size=0.33, random_state=0)
+x_train, x_test, y_train, y_test = train_test_split(feature_list, label_list, test_size=0.33, random_state=1)
+print(x_train)
 
 # extract the feature of train_X
 vec = DictVectorizer()
@@ -275,6 +292,8 @@ data_y = lb.fit_transform(label_list)
 y_train_label =  lb.fit_transform(y_train)
 y_test_label = lb.fit_transform(y_test)
 
+# print(feature_list)
+# print(label_list)
 error_rate_RandomForest_List = []
 for i in range(25):
     Forest = RandomForest(i+1)
@@ -317,11 +336,10 @@ error_rate_clf_SVM = 1 - accuracy_clf_SVM
 #     max_iter=-1, probability=False, random_state=None, shrinking=True,
 #     tol=0.001, verbose=False)
 
-print(accuracy_tree)
-print(accuracy_RandomForest)
-print(accuracy_clf_DecisionTree)
-print(accuracy_clf_SVM)
-print(error_rate_RandomForest_List)
+print("accuracy_tree:"+str(accuracy_tree))
+print("accuracy_RandomForest:"+str(accuracy_RandomForest))
+print("accuracy_clf_DecisionTree:"+str(accuracy_clf_DecisionTree))
+print("accuracy_clf_SVM:"+str(accuracy_clf_SVM))
 #
 #
 # tree = DecisionTree()
